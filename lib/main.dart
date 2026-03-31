@@ -41,7 +41,7 @@ class _TranslationPageState extends State<TranslationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("수화 번역 장갑"),
+        title: const Text("수화 번역 장갑"),//FUCK YOU!
         centerTitle: true,
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
