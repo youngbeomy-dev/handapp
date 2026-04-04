@@ -42,7 +42,6 @@ class _TranslationPageState extends State<TranslationPage> {
             icon: const Icon(Icons.settings),
             tooltip: '설정',
             onPressed: () {
-              // 설정 버튼을 누르면 SettingsPage로 이동합니다.
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const SettingsPage()),
@@ -51,11 +50,43 @@ class _TranslationPageState extends State<TranslationPage> {
           ),
         ],
       ),
-      body: const Padding(
-        padding: EdgeInsets.all(20.0),
+      // [해결 포인트] 아래 Padding 앞에 const가 있다면 반드시 지워야 합니다.
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            // 여기가 코드가 들어갈 자리
+            // 1. 번역 결과 출력 박스
+            Container(
+              width: double.infinity,
+              // 화면 높이의 40%를 차지하게 설정 (이 부분 때문에 상단에 const가 있으면 안 됨)
+              height: MediaQuery.of(context).size.height * 0.4,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.indigo.shade100, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  "수화를 시작하세요",
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.indigo,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
 
           ],
         ),
@@ -63,7 +94,6 @@ class _TranslationPageState extends State<TranslationPage> {
     );
   }
 }
-
 // ---------------------------------------------------------
 // 여기서부터 설정창 코드
 // ---------------------------------------------------------
