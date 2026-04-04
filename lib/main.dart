@@ -87,7 +87,33 @@ class _TranslationPageState extends State<TranslationPage> {
 
             const SizedBox(height: 30),
 
+            const Spacer(), // 이거 넣으면 버튼이 맨 아래로 감
 
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddGesturePage()),
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text("동작 추가"),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  textStyle: const TextStyle(fontSize: 18),
+                  side: const BorderSide(
+                    color: Colors.indigo, // 테두리 색
+                    width: 2,             // 테두리 두께
+                  ),
+                  foregroundColor: Colors.indigo, // 글자 & 아이콘 색
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -137,6 +163,30 @@ class SettingsPage extends StatelessWidget {
         style: TextStyle(
           color: isConnected ? Colors.green : Colors.red,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------
+// 여기서부터 동작설정창 코드
+// ---------------------------------------------------------
+class AddGesturePage extends StatelessWidget {
+  const AddGesturePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("동작 추가"),
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+      ),
+      body: const Center(
+        child: Text(
+          "여기서 새로운 수화를 등록합니다",
+          style: TextStyle(fontSize: 18),
         ),
       ),
     );
