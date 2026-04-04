@@ -170,7 +170,7 @@ class SettingsPage extends StatelessWidget {
 }
 
 // ---------------------------------------------------------
-// 여기서부터 동작설정창 코드
+// 여기서부터 동작설정창 코드, 동작 추가
 // ---------------------------------------------------------
 class AddGesturePage extends StatelessWidget {
   const AddGesturePage({super.key});
