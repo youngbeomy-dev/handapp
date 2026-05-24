@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
 void main() {
   runApp(const SignLanguageApp());
 }
@@ -249,7 +248,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 }
-
 // ---------------------------------------------------------
 // 여기서부터 동작설정창 코드, 동작 추가
 // ---------------------------------------------------------
@@ -273,10 +271,6 @@ class AddGesturePage extends StatelessWidget {
     );
   }
 }
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-
 class SensorTestPage extends StatefulWidget {
   const SensorTestPage({super.key});
 
@@ -285,71 +279,48 @@ class SensorTestPage extends StatefulWidget {
 }
 
 class _SensorTestPageState extends State<SensorTestPage> {
-  // 실제 센서 데이터를 저장할 리스트 (0: 엄지 ~ 4: 새끼)
   List<int> leftFingers = [0, 0, 0, 0, 0];
   List<int> rightFingers = [0, 0, 0, 0, 0];
-
-  // 실제 연동 시 연결된 기기의 Characteristic을 담을 변수
-  BluetoothCharacteristic? _targetCharacteristic;
-
-  @override
-  void initState() {
-    super.initState();
-    _startListeningToSensor();
-  }
-
-  // 블루투스 데이터를 수신하여 실시간으로 리스트를 업데이트하는 로직
-  void _startListeningToSensor() {
-    // _targetCharacteristic이 설정된 상태에서 데이터를 구독(Subscribe)합니다.
-    _targetCharacteristic?.lastValueStream.listen((value) {
-      if (value.isNotEmpty) {
-        // 1. 바이트 데이터를 문자열로 변환 (UTF-8)
-        String rawData = utf8.decode(value).trim();
-
-        // 2. 쉼표로 분리 (예: "0,50,100,0,0")
-        List<String> parsed = rawData.split(',');
-
-        if (parsed.length == 5) {
-          setState(() {
-            // 3. 문자열 리스트를 정수형 리스트로 변환하여 저장
-            rightFingers = parsed.map((v) => int.tryParse(v) ?? 0).toList();
-          });
-        }
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('실시간 센서 연동 테스트'),
+        title: const Text('센서 구부림 상태 확인'),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
+      // [수정 포인트] SingleChildScrollView는 child 하나만 가질 수 있으므로 Column으로 감쌉니다.
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
             const Text(
-              "SZH-SEN01 센서 데이터 스트리밍 중...\n(장갑을 구부리면 화면의 막대가 즉시 반응합니다)",
-              style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold, height: 1.5),
+              "장갑을 착용하고 손가락을 구부려보세요.\n(0: 펴짐 / 50: 중간 / 100: 굽힘)",
+              style: TextStyle(color: Colors.grey, height: 1.5),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 30),
 
-            // 시각화 UI
             Row(
               children: [
-                Expanded(child: _buildHandDisplay("왼손 장갑", leftFingers)),
+                Expanded(child: _buildHandDisplay("왼손", leftFingers)),
                 const SizedBox(width: 15),
-                Expanded(child: _buildHandDisplay("오른손 장갑", rightFingers)),
+                Expanded(child: _buildHandDisplay("오른손", rightFingers)),
               ],
             ),
 
-            const SizedBox(height: 50),
-            const Icon(Icons.bluetooth_connected, size: 40, color: Colors.blue),
-            const Text("ESP-32 보드 연결 대기 중", style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 40),
+            const Divider(),
+            const SizedBox(height: 20),
+
+            _buildManualSlider("오른손 검지 테스트", 1, (val) {
+              setState(() => rightFingers[1] = val);
+            }, rightFingers[1]),
+
+            _buildManualSlider("오른손 중지 테스트", 2, (val) {
+              setState(() => rightFingers[2] = val);
+            }, rightFingers[2]),
           ],
         ),
       ),
@@ -383,17 +354,20 @@ class _SensorTestPageState extends State<SensorTestPage> {
     Color color = Colors.greenAccent[700]!;
     String text = "0";
 
-    // 0, 50, 100 3단계 판별 로직
     if (value >= 67) {
-      height = 30.0; color = Colors.redAccent; text = "100";
+      height = 30.0;
+      color = Colors.redAccent;
+      text = "100";
     } else if (value >= 34) {
-      height = 55.0; color = Colors.orangeAccent; text = "50";
+      height = 55.0;
+      color = Colors.orangeAccent;
+      text = "50";
     }
 
     return Column(
       children: [
         AnimatedContainer(
-          duration: const Duration(milliseconds: 150), // 실시간성을 위해 애니메이션 시간 단축
+          duration: const Duration(milliseconds: 200),
           width: 12,
           height: height,
           decoration: BoxDecoration(
@@ -403,6 +377,26 @@ class _SensorTestPageState extends State<SensorTestPage> {
         ),
         const SizedBox(height: 5),
         Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildManualSlider(String name, int index, Function(int) onChanged, int currentVal) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 15),
+          child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ),
+        Slider(
+          value: currentVal.toDouble(),
+          max: 100,
+          divisions: 2,
+          activeColor: Colors.indigo,
+          onChanged: (v) => onChanged(v.toInt()),
+        ),
+        const SizedBox(height: 10),
       ],
     );
   }
