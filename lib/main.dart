@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'dart:convert';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 void main() {
   runApp(const SignLanguageApp());
 }
@@ -185,7 +186,6 @@ Widget _buildModeBox({
 // ---------------------------------------------------------
 // 여기서부터 설정창 코드
 // ---------------------------------------------------------
-
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
@@ -206,8 +206,27 @@ class SettingsPage extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _buildDeviceStatus('왼손 장갑', false),
-          _buildDeviceStatus('오른손 장갑',false),
+          _buildDeviceStatus('오른손 장갑', false),
           _buildDeviceStatus('안경', false),
+
+          const SizedBox(height: 30),
+          const Divider(),
+          const SizedBox(height: 10),
+
+          // 새로운 메뉴: 센서 테스트 페이지로 이동
+          ListTile(
+            leading: const Icon(Icons.touch_app, color: Colors.indigo),
+            title: const Text('손가락 센서 값 확인',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+            subtitle: const Text('SZH-SEN01 플렉스 센서 동작 테스트'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SensorTestPage()),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -230,6 +249,7 @@ class SettingsPage extends StatelessWidget {
     );
   }
 }
+
 // ---------------------------------------------------------
 // 여기서부터 동작설정창 코드, 동작 추가
 // ---------------------------------------------------------
@@ -250,6 +270,140 @@ class AddGesturePage extends StatelessWidget {
           style: TextStyle(fontSize: 18),
         ),
       ),
+    );
+  }
+}
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
+class SensorTestPage extends StatefulWidget {
+  const SensorTestPage({super.key});
+
+  @override
+  State<SensorTestPage> createState() => _SensorTestPageState();
+}
+
+class _SensorTestPageState extends State<SensorTestPage> {
+  // 실제 센서 데이터를 저장할 리스트 (0: 엄지 ~ 4: 새끼)
+  List<int> leftFingers = [0, 0, 0, 0, 0];
+  List<int> rightFingers = [0, 0, 0, 0, 0];
+
+  // 실제 연동 시 연결된 기기의 Characteristic을 담을 변수
+  BluetoothCharacteristic? _targetCharacteristic;
+
+  @override
+  void initState() {
+    super.initState();
+    _startListeningToSensor();
+  }
+
+  // 블루투스 데이터를 수신하여 실시간으로 리스트를 업데이트하는 로직
+  void _startListeningToSensor() {
+    // _targetCharacteristic이 설정된 상태에서 데이터를 구독(Subscribe)합니다.
+    _targetCharacteristic?.lastValueStream.listen((value) {
+      if (value.isNotEmpty) {
+        // 1. 바이트 데이터를 문자열로 변환 (UTF-8)
+        String rawData = utf8.decode(value).trim();
+
+        // 2. 쉼표로 분리 (예: "0,50,100,0,0")
+        List<String> parsed = rawData.split(',');
+
+        if (parsed.length == 5) {
+          setState(() {
+            // 3. 문자열 리스트를 정수형 리스트로 변환하여 저장
+            rightFingers = parsed.map((v) => int.tryParse(v) ?? 0).toList();
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('실시간 센서 연동 테스트'),
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            const Text(
+              "SZH-SEN01 센서 데이터 스트리밍 중...\n(장갑을 구부리면 화면의 막대가 즉시 반응합니다)",
+              style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold, height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 30),
+
+            // 시각화 UI
+            Row(
+              children: [
+                Expanded(child: _buildHandDisplay("왼손 장갑", leftFingers)),
+                const SizedBox(width: 15),
+                Expanded(child: _buildHandDisplay("오른손 장갑", rightFingers)),
+              ],
+            ),
+
+            const SizedBox(height: 50),
+            const Icon(Icons.bluetooth_connected, size: 40, color: Colors.blue),
+            const Text("ESP-32 보드 연결 대기 중", style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHandDisplay(String label, List<int> values) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 15),
+        Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.indigo.withOpacity(0.1)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(5, (i) => _buildFingerBar(values[i])),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFingerBar(int value) {
+    double height = 80.0;
+    Color color = Colors.greenAccent[700]!;
+    String text = "0";
+
+    // 0, 50, 100 3단계 판별 로직
+    if (value >= 67) {
+      height = 30.0; color = Colors.redAccent; text = "100";
+    } else if (value >= 34) {
+      height = 55.0; color = Colors.orangeAccent; text = "50";
+    }
+
+    return Column(
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 150), // 실시간성을 위해 애니메이션 시간 단축
+          width: 12,
+          height: height,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(5),
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 }
