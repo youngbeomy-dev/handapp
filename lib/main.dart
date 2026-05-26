@@ -22,6 +22,7 @@ class SignLanguageApp extends StatelessWidget {
 }
 
 enum InputMode { none, sign, finger, gesture }
+
 class TranslationPage extends StatefulWidget {
   const TranslationPage({super.key});
 
@@ -29,164 +30,177 @@ class TranslationPage extends StatefulWidget {
   State<TranslationPage> createState() => _TranslationPageState();
 }
 
-class _TranslationPageState extends State<TranslationPage> {  InputMode _selectedMode = InputMode.none;
+class _TranslationPageState extends State<TranslationPage> {
+  InputMode _selectedMode = InputMode.none;
+  // [추가] 화면에 표시될 텍스트 변수
+  String _displayText = "수화를 시작하세요";
 
-void _selectMode(InputMode mode) {
-  setState(() {
-    _selectedMode = mode;
-  });
-}
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: const Text("수화 번역 장갑"),
-      centerTitle: true,
-      backgroundColor: Colors.indigo,
-      foregroundColor: Colors.white,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.settings),
-          tooltip: '설정',
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SettingsPage()),
-            );
-          },
-        ),
-      ],
-    ),
-    // [해결 포인트] 아래 Padding 앞에 const가 있다면 반드시 지워야 합니다.
-    body: Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        children: [
-          // 1. 번역 결과 출력 박스
-          Container(
-            width: double.infinity,
-            // 화면 높이의 40%를 차지하게 설정 (이 부분 때문에 상단에 const가 있으면 안 됨)
-            height: MediaQuery.of(context).size.height * 0.4,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.indigo.shade100, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Text(
-                "수화를 시작하세요",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.indigo,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
+  void _selectMode(InputMode mode) {
+    setState(() {
+      _selectedMode = mode;
+    });
+  }
 
-          const SizedBox(height: 30),
-          Row(
-            children: [
-              Expanded(
-                child: _buildModeBox(
-                  label: "수화",
-                  mode: InputMode.sign,
-                  activeColor: Colors.red,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildModeBox(
-                  label: "지화",
-                  mode: InputMode.finger,
-                  activeColor: Colors.green,
-                ),
-              ),
-            ],
-          ),
+  // [추가] 센서 값에 따라 텍스트를 업데이트하는 함수
+  void _updateTranslation(List<int> leftFingers) {
+    setState(() {
+      if (leftFingers[1] == 50) {
+        _displayText = "1";
+      } else if (leftFingers[2] == 50) {
+        _displayText = "2";
+      } else {
+        _displayText = "수화를 시작하세요";
+      }
+    });
+  }
 
-          const SizedBox(height: 10),
-          const Spacer(),   // 이거 넣으면 버튼이 맨 아래로 감
-
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AddGesturePage(),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("수화 번역 장갑"),
+        centerTitle: true,
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: '설정',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsPage(
+                    // [추가] 설정 페이지를 거쳐 센서 페이지로 함수 전달
+                    onSensorChanged: _updateTranslation,
                   ),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text("동작 추가"),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                textStyle: const TextStyle(fontSize: 18),
-                side: const BorderSide(
-                  color: Colors.indigo,
-                  width: 2,
                 ),
-                foregroundColor: Colors.indigo,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
+              );
+            },
           ),
         ],
       ),
-    ),
-  );
-}
-Widget _buildModeBox({
-  required String label,
-  required InputMode mode,
-  required Color activeColor,
-}) {
-  final bool isSelected = _selectedMode == mode;
-
-  return GestureDetector(
-    onTap: () => _selectMode(mode),
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      height: 120,
-      decoration: BoxDecoration(
-        color:
-        isSelected ? activeColor.withOpacity(0.15) : Colors.grey[200],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? activeColor : Colors.grey.shade400,
-          width: 2,
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              height: MediaQuery.of(context).size.height * 0.4,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.indigo.shade100, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  _displayText, // [수정] 변수 적용
+                  style: const TextStyle(
+                    fontSize: 80, // 숫자가 잘 보이도록 크기 키움
+                    fontWeight: FontWeight.bold,
+                    color: Colors.indigo,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildModeBox(
+                    label: "수화",
+                    mode: InputMode.sign,
+                    activeColor: Colors.red,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildModeBox(
+                    label: "지화",
+                    mode: InputMode.finger,
+                    activeColor: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddGesturePage(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text("동작 추가"),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  textStyle: const TextStyle(fontSize: 18),
+                  side: const BorderSide(color: Colors.indigo, width: 2),
+                  foregroundColor: Colors.indigo,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-      child: Center(
-        child: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 28,
-            color: isSelected ? activeColor : Colors.black54,
+    );
+  }
+
+  Widget _buildModeBox({
+    required String label,
+    required InputMode mode,
+    required Color activeColor,
+  }) {
+    final bool isSelected = _selectedMode == mode;
+    return GestureDetector(
+      onTap: () => _selectMode(mode),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 120,
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor.withOpacity(0.15) : Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? activeColor : Colors.grey.shade400,
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 28,
+              color: isSelected ? activeColor : Colors.black54,
+            ),
           ),
         ),
       ),
-    ),
-  );
-}}
-// ---------------------------------------------------------
-// 여기서부터 설정창 코드
-// ---------------------------------------------------------
+    );
+  }
+}
+
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+  // [수정] 콜백 함수를 받도록 생성자 수정
+  final Function(List<int>) onSensorChanged;
+  const SettingsPage({super.key, required this.onSensorChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -207,12 +221,9 @@ class SettingsPage extends StatelessWidget {
           _buildDeviceStatus('왼손 장갑', false),
           _buildDeviceStatus('오른손 장갑', false),
           _buildDeviceStatus('안경', false),
-
           const SizedBox(height: 30),
           const Divider(),
           const SizedBox(height: 10),
-
-          // 새로운 메뉴: 센서 테스트 페이지로 이동
           ListTile(
             leading: const Icon(Icons.touch_app, color: Colors.indigo),
             title: const Text('손가락 센서 값 확인',
@@ -222,7 +233,12 @@ class SettingsPage extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SensorTestPage()),
+                MaterialPageRoute(
+                  builder: (context) => SensorTestPage(
+                    // [추가] 센서 페이지로 콜백 전달
+                    onSensorChanged: onSensorChanged,
+                  ),
+                ),
               );
             },
           ),
@@ -248,31 +264,11 @@ class SettingsPage extends StatelessWidget {
     );
   }
 }
-// ---------------------------------------------------------
-// 여기서부터 동작설정창 코드, 동작 추가
-// ---------------------------------------------------------
-class AddGesturePage extends StatelessWidget {
-  const AddGesturePage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("동작 추가"),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
-      ),
-      body: const Center(
-        child: Text(
-          "여기서 새로운 수화를 등록합니다",
-          style: TextStyle(fontSize: 18),
-        ),
-      ),
-    );
-  }
-}
 class SensorTestPage extends StatefulWidget {
-  const SensorTestPage({super.key});
+  // [수정] 콜백 함수를 받도록 수정
+  final Function(List<int>) onSensorChanged;
+  const SensorTestPage({super.key, required this.onSensorChanged});
 
   @override
   State<SensorTestPage> createState() => _SensorTestPageState();
@@ -290,7 +286,6 @@ class _SensorTestPageState extends State<SensorTestPage> {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      // [수정 포인트] SingleChildScrollView는 child 하나만 가질 수 있으므로 Column으로 감쌉니다.
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -301,7 +296,6 @@ class _SensorTestPageState extends State<SensorTestPage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 30),
-
             Row(
               children: [
                 Expanded(child: _buildHandDisplay("왼손", leftFingers)),
@@ -309,18 +303,25 @@ class _SensorTestPageState extends State<SensorTestPage> {
                 Expanded(child: _buildHandDisplay("오른손", rightFingers)),
               ],
             ),
-
             const SizedBox(height: 40),
             const Divider(),
             const SizedBox(height: 20),
 
-            _buildManualSlider("오른손 검지 테스트", 1, (val) {
-              setState(() => rightFingers[1] = val);
-            }, rightFingers[1]),
+            // [수정] 왼손 검지 테스트 슬라이더 추가
+            _buildManualSlider("왼손 검지 테스트", 1, (val) {
+              setState(() {
+                leftFingers[1] = val;
+                widget.onSensorChanged(leftFingers); // 메인으로 값 전달
+              });
+            }, leftFingers[1]),
 
-            _buildManualSlider("오른손 중지 테스트", 2, (val) {
-              setState(() => rightFingers[2] = val);
-            }, rightFingers[2]),
+            // [수정] 왼손 중지 테스트 슬라이더 추가
+            _buildManualSlider("왼손 중지 테스트", 2, (val) {
+              setState(() {
+                leftFingers[2] = val;
+                widget.onSensorChanged(leftFingers); // 메인으로 값 전달
+              });
+            }, leftFingers[2]),
           ],
         ),
       ),
@@ -330,7 +331,8 @@ class _SensorTestPageState extends State<SensorTestPage> {
   Widget _buildHandDisplay(String label, List<int> values) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(label,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 15),
         Container(
           padding: const EdgeInsets.all(15),
@@ -376,18 +378,21 @@ class _SensorTestPageState extends State<SensorTestPage> {
           ),
         ),
         const SizedBox(height: 5),
-        Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+        Text(text,
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
       ],
     );
   }
 
-  Widget _buildManualSlider(String name, int index, Function(int) onChanged, int currentVal) {
+  Widget _buildManualSlider(
+      String name, int index, Function(int) onChanged, int currentVal) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 15),
-          child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          child:
+          Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
         Slider(
           value: currentVal.toDouble(),
@@ -398,6 +403,23 @@ class _SensorTestPageState extends State<SensorTestPage> {
         ),
         const SizedBox(height: 10),
       ],
+    );
+  }
+}
+
+class AddGesturePage extends StatelessWidget {
+  const AddGesturePage({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("동작 추가"),
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+      ),
+      body: const Center(
+        child: Text("여기서 새로운 수화를 등록합니다", style: TextStyle(fontSize: 18)),
+      ),
     );
   }
 }
